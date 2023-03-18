@@ -1,0 +1,64 @@
+PROGRAM =  { DELIM? ~ (STMT ~ DELIM)* ~ STMT ~ DELIM? }
+STMT    =  { EXPR | nothing | EXPORT }
+DELIM   =  { ("⋄" | "," | NEWLINE)+ }
+EXPR    =  { subExpr | FuncExpr | _m1Expr | _m2Expr_ }
+EXPORT  =  { LHS_ELT? ~ "⇐" }
+
+SOME    = { atom | Func | _mod1 | _mod2_ }
+_mod1   = { (atom ~ ".")? ~ _m | "(" ~ _m1Expr ~ ")" | _ml  }
+_mod2_  = { "(" ~ _m2Expr_ ~ ")" | (atom ~ ".")? ~ _c_ |  _cl_  }
+Func    = { "(" ~ FuncExpr ~ ")" | (atom ~ ".")? ~ fun | Fl }
+atom    = { "(" ~ subExpr  ~ ")" | array | val | sl}
+array   = { "⟨" ~ DELIM? ~ ((EXPR ~ DELIM)* ~ EXPR ~ DELIM?)? ~ "⟩"
+          | "[" ~ DELIM? ~  (EXPR ~ DELIM)* ~ EXPR ~ DELIM? ~ "]" }
+subject = { SOME ~ ("‿" ~ SOME)+ | atom }
+
+_m2Expr_ = { _c_ ~ ASGN ~ _m2Expr_ | _mod2_ }
+_m1Expr  = { _m ~ ASGN ~ _m1Expr | _mod1 }
+Derv     = { (subject | Func) ~ (_mod1 | _mod2_ ~ (subject | Func))+ | Func }
+Fork     = { (subject | Derv) ~ Derv ~ Fork |
+              nothing ~ Derv ~ Fork |
+              Derv }
+Train    = { Derv ~ Fork | Fork }
+FuncExpr = { (fun ~ ASGN ~ FuncExpr) | Train }
+
+arg     = { ((subject | nothing)? ~ Derv ~ subExpr) | subject}
+nothing = { "·" | Derv ~ nothing  }
+subExpr = { (lhs ~ ASGN ~ subExpr) | (lhs ~ Derv ~ "↩" ~ subExpr?) | arg }
+
+NAME      = { val | fun | _m | _c_ }
+LHS_SUB   = { "·" | lhsList | lhsArray | sl }
+LHS_ANY   = { NAME | LHS_SUB | "(" ~ LHS_ELT ~ ")" }
+LHS_ATOM  = { LHS_ANY | "(" ~ lhsStr ~ ")" }
+LHS_ELT   = { LHS_ANY | lhsStr }
+LHS_ENTRY = { LHS_ELT | lhs ~ "⇐" ~ NAME }
+lhsStr    = { LHS_ATOM ~ ("‿" ~ LHS_ATOM)+ }
+lhsList   = { "⟨" ~ DELIM? ~ ((LHS_ENTRY ~ DELIM)* ~ LHS_ENTRY ~ DELIM?)? ~ "⟩" }
+lhsArray  = { "[" ~ DELIM? ~ ((LHS_ELT ~ DELIM)* ~ LHS_ELT ~ DELIM?)? ~ "]" }
+lhsComp   = { LHS_SUB | lhsStr | "(" ~ lhs ~ ")" }
+lhs       = { val | lhsComp }
+
+// TOKENS
+sl       = { char | string | number | null }
+number   = { "¯"? ~ ("∞" | mantissa ~ (("e" | "E") ~ exponent)?) }
+exponent = { "¯"? ~ ASCII_DIGIT+ }
+mantissa = _{ "π" | ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+string   = { "\"" ~ (ASCII_HEX_DIGIT*) ~ "\"" }
+char     = { "'" ~ (ASCII_HEX_DIGIT) ~ "'" }
+null     = { "@" }
+dot      = { "." }
+Fl       = { "+" | "-" | "×" | "÷" | "⋆" | "√" | "⌊" | "⌈" | "|" | "¬" | "∧" | "∨" | "<" | ">" | "≠" | "=" | "≤" | "≥" | "≡" | "≢" | "⊣" | "⊢" | "⥊" | "∾" | "≍" | "⋈" | "↑" | "↓" | "↕" | "«" | "»" | "⌽" | "⍉" | "/" | "⍋" | "⍒" | "⊏" | "⊑" | "⊐" | "⊒" | "∊" | "⍷" | "⊔" | "!" }
+_ml      = { "˙" | "˜" | "˘" | "¨" | "⌜" | "⁼" | "´" | "˝" | "`" }
+_cl_     = { "∘" | "○" | "⊸" | "⟜" | "⌾" | "⊘" | "◶" | "⎉" | "⚇" | "⍟" | "⎊" }
+specfun  = { "𝕎" | "𝕏" | "𝔽" | "𝔾" | "𝕊" }
+specval  = { "𝕨" | "𝕩" | "𝕗" | "𝕘" | "𝕤" }
+specmod2 = { "_" ~ "𝕣" ~ "_" | "𝕣" }
+punct    = { ";" | ":" | "?" }
+val      = { ASCII_ALPHA_LOWER ~ ASCII_ALPHANUMERIC* }
+fun      = { ASCII_ALPHA_UPPER ~ ASCII_ALPHANUMERIC* }
+mod1     = { "_" ~ ASCII_ALPHANUMERIC+ }
+_m       = { "_" ~ ASCII_ALPHANUMERIC+ }
+mod2     = { "_" ~ ASCII_ALPHANUMERIC+ ~ "_" }
+_c_      = { "_" ~ ASCII_ALPHANUMERIC+ ~ "_" }
+ASGN     = { "←" | "⇐" | "↩" }
+COMMENT  = { "#" ~ (!"\n" ~ ANY)* }

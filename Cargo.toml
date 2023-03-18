@@ -1,0 +1,23 @@
+[package]
+name = "sizzle"
+version = "0.1.0"
+authors = [ "x86y <x8@6y.me" ]
+edition = "2021"
+
+[dependencies]
+logos = { git = "https://github.com/maciejhirsz/logos", optional = true }
+pest = { version = "2.5.6", optional = true }
+pest_derive = { version = "2.5.6", optional = true }
+
+[lib]
+name = "parser"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sizzle"
+path = "src/bin.rs"
+
+[features]
+default = []
+pest = ["dep:pest", "dep:pest_derive"]
+handrolled = ["dep:logos"]
